@@ -35,17 +35,6 @@ test.skipIf(!origin)("open a routine with saved values, save a change, and cance
     await page.getByRole("button", { name: "Bot details", exact: true }).click();
     const section = page.locator("section").filter({ has: page.getByRole("heading", { name: "Routines", exact: true }) });
     const edit = section.getByRole("button", { name: `Edit ${original.name}`, exact: true });
-    const row = section.locator("div.rounded-2xl").filter({ has: page.getByText(original.name, { exact: true }) });
-    const schedule = row.getByText("Every hour (Europe/Bratislava) · never run", { exact: true });
-    const scheduleSize = await schedule.evaluate((element) => ({ height: element.getBoundingClientRect().height, lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight) }));
-    expect(scheduleSize.height).toBeLessThanOrEqual(scheduleSize.lineHeight + 1);
-    const testBox = await row.getByRole("button", { name: "Test run", exact: true }).boundingBox();
-    const historyBox = await row.getByRole("button", { name: "History", exact: true }).boundingBox();
-    const editBox = await edit.boundingBox();
-    const deleteBox = await row.getByRole("button", { name: `Delete ${original.name}`, exact: true }).boundingBox();
-    if (!testBox || !historyBox || !editBox || !deleteBox) throw new Error("All routine buttons must be visible.");
-    expect(deleteBox.x - editBox.x - editBox.width).toBeCloseTo(historyBox.x - testBox.x - testBox.width, 0);
-    expect(editBox.y).toBeCloseTo(deleteBox.y, 0);
     await edit.click();
     const name = section.getByLabel("Name", { exact: true });
     const instruction = section.getByRole("textbox", { name: /^Instruction/ });

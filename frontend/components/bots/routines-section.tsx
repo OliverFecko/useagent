@@ -69,28 +69,28 @@ function RoutineRow({
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-border-button-default p-3">
-      <div>
-        <div className="flex items-start justify-between gap-3">
-          <p className="flex min-w-0 items-center gap-2 text-body-2-medium text-text-primary">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-body-2-medium text-text-primary">
             <span className="truncate" title={routine.name}>
               {routine.name}
             </span>
             {started && <Badge>Running</Badge>}
           </p>
-          <Switch
-            size="sm"
-            aria-label={`${routine.name} enabled`}
-            isSelected={routine.enabled}
-            onChange={(enabled: boolean) =>
-              void guard("toggle", async () => (await updateRoutine(bot.id, routine.id, { enabled })) ?? undefined)
-            }
-          />
+          <p className="text-caption-1-regular text-text-tertiary">
+            {cadenceLabel(routine.cron)}
+            {routine.timezone ? ` (${routine.timezone})` : ""}
+            {routine.lastFiredAt ? ` · last run ${relativeTime(routine.lastFiredAt, now) || "just now"}` : " · never run"}
+          </p>
         </div>
-        <p className="text-caption-1-regular text-text-tertiary">
-          {cadenceLabel(routine.cron)}
-          {routine.timezone ? ` (${routine.timezone})` : ""}
-          {routine.lastFiredAt ? ` · last run ${relativeTime(routine.lastFiredAt, now) || "just now"}` : " · never run"}
-        </p>
+        <Switch
+          size="sm"
+          aria-label={`${routine.name} enabled`}
+          isSelected={routine.enabled}
+          onChange={(enabled: boolean) =>
+            void guard("toggle", async () => (await updateRoutine(bot.id, routine.id, { enabled })) ?? undefined)
+          }
+        />
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
@@ -120,26 +120,25 @@ function RoutineRow({
             History
           </Button>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="small"
-            iconOnly
-            leadingIcon={RiEditLine}
-            aria-label={`Edit ${routine.name}`}
-            title="Edit routine"
-            disabled={busy !== null}
-            onClick={() => setEditing(true)}
-          />
-          <Button
-            variant="ghost"
-            size="small"
-            iconOnly
-            leadingIcon={RiDeleteBinLine}
-            aria-label={`Delete ${routine.name}`}
-            onClick={() => setConfirming(true)}
-          />
-        </div>
+        <Button
+          variant="ghost"
+          size="small"
+          iconOnly
+          className="ml-auto"
+          leadingIcon={RiEditLine}
+          aria-label={`Edit ${routine.name}`}
+          title="Edit routine"
+          disabled={busy !== null}
+          onClick={() => setEditing(true)}
+        />
+        <Button
+          variant="ghost"
+          size="small"
+          iconOnly
+          leadingIcon={RiDeleteBinLine}
+          aria-label={`Delete ${routine.name}`}
+          onClick={() => setConfirming(true)}
+        />
       </div>
       {error && (
         <p role="alert" className="text-caption-1-regular text-text-error-primary">
