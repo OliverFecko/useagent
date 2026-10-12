@@ -1,6 +1,6 @@
 "use client";
 
-import { RiAddLine, RiDeleteBinLine, RiHistoryLine, RiPlayLine } from "@remixicon/react";
+import { RiAddLine, RiDeleteBinLine, RiEditLine, RiHistoryLine, RiPlayLine } from "@remixicon/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/base/badges/badge";
 import { Button } from "@/components/base/buttons/button";
 import * as Modal from "@/components/base/modal/modal";
 import { Switch } from "@/components/base/switch/switch";
-import { NewRoutineForm } from "./routine-form";
+import { RoutineForm } from "./routine-form";
 import { RoutineHistoryDrawer } from "./routine-history";
 import { deleteRoutine, fetchRoutines, runRoutineNow, updateRoutine } from "./routines-api";
 import { relativeTime } from "./roster-model";
@@ -35,6 +35,7 @@ function RoutineRow({
   const [busy, setBusy] = useState<"toggle" | "run" | "delete" | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   /** The run a test run started, until this row goes away. */
   const [started, setStarted] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,30 +53,44 @@ function RoutineRow({
     }
   };
 
+  if (editing) {
+    return (
+      <RoutineForm
+        bot={bot}
+        routine={routine}
+        onCancel={() => setEditing(false)}
+        onSaved={(saved) => {
+          setEditing(false);
+          onChange(saved);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-border-button-default p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-body-2-medium text-text-primary">
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <p className="flex min-w-0 items-center gap-2 text-body-2-medium text-text-primary">
             <span className="truncate" title={routine.name}>
               {routine.name}
             </span>
             {started && <Badge>Running</Badge>}
           </p>
-          <p className="text-caption-1-regular text-text-tertiary">
-            {cadenceLabel(routine.cron)}
-            {routine.timezone ? ` (${routine.timezone})` : ""}
-            {routine.lastFiredAt ? ` · last run ${relativeTime(routine.lastFiredAt, now) || "just now"}` : " · never run"}
-          </p>
+          <Switch
+            size="sm"
+            aria-label={`${routine.name} enabled`}
+            isSelected={routine.enabled}
+            onChange={(enabled: boolean) =>
+              void guard("toggle", async () => (await updateRoutine(bot.id, routine.id, { enabled })) ?? undefined)
+            }
+          />
         </div>
-        <Switch
-          size="sm"
-          aria-label={`${routine.name} enabled`}
-          isSelected={routine.enabled}
-          onChange={(enabled: boolean) =>
-            void guard("toggle", async () => (await updateRoutine(bot.id, routine.id, { enabled })) ?? undefined)
-          }
-        />
+        <p className="text-caption-1-regular text-text-tertiary">
+          {cadenceLabel(routine.cron)}
+          {routine.timezone ? ` (${routine.timezone})` : ""}
+          {routine.lastFiredAt ? ` · last run ${relativeTime(routine.lastFiredAt, now) || "just now"}` : " · never run"}
+        </p>
       </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
@@ -105,14 +120,26 @@ function RoutineRow({
             History
           </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="small"
-          iconOnly
-          leadingIcon={RiDeleteBinLine}
-          aria-label={`Delete ${routine.name}`}
-          onClick={() => setConfirming(true)}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="ghost"
+            size="small"
+            iconOnly
+            leadingIcon={RiEditLine}
+            aria-label={`Edit ${routine.name}`}
+            title="Edit routine"
+            disabled={busy !== null}
+            onClick={() => setEditing(true)}
+          />
+          <Button
+            variant="ghost"
+            size="small"
+            iconOnly
+            leadingIcon={RiDeleteBinLine}
+            aria-label={`Delete ${routine.name}`}
+            onClick={() => setConfirming(true)}
+          />
+        </div>
       </div>
       {error && (
         <p role="alert" className="text-caption-1-regular text-text-error-primary">
@@ -192,10 +219,10 @@ export function RoutinesSection({ bot }: { bot: ApiBot }) {
         )}
       </div>
       {adding && (
-        <NewRoutineForm
+        <RoutineForm
           bot={bot}
           onCancel={() => setAdding(false)}
-          onCreated={() => {
+          onSaved={() => {
             setAdding(false);
             changed();
           }}
